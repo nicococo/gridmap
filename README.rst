@@ -1,5 +1,5 @@
-GridMap
------------
+GridMap (nicococo style)
+------------------------
 
 .. image:: https://img.shields.io/travis/pygridtools/gridmap/stable.svg
    :alt: Build status
@@ -23,6 +23,7 @@ A package to allow you to easily create jobs on the cluster directly from
 Python. You can directly map Python functions onto the cluster without needing
 to write any wrapper code yourself.
 
+This is a fork of the pygridtools/GridMap project.
 This is the ETS fork of an older project called `Python Grid <https://github.com/pygridtools/pythongrid>`__. Unlike the older
 version, it is Python 2/3 compatible. Another major difference is that you can
 change the configuration via environment variables instead of having to modify
@@ -54,5 +55,5 @@ funding the development of GridMap.
 
 Changelog
 ~~~~~~~~~
-
+Adaptation: Use pip install git+https://github.com/nicococo/gridmap for installation
 See `GitHub releases <https://github.com/EducationalTestingService/gridmap/releases>`__.
