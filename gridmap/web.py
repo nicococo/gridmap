@@ -39,6 +39,7 @@ from socket import gethostname
 
 import cherrypy
 
+from gridmap.job import _JOB_NOT_FINISHED
 from gridmap.runner import _send_zmq_msg
 from gridmap.version import __version__
 
@@ -81,7 +82,7 @@ class WebMonitor(object):
         for job in jobs:
             out_html += ("<tr><td><a href='/view_job?address={0}" +
                          "&job_id={1}'>{1}</td>").format(address, job.id)
-            out_html += "<td>{}</td>".format(job.ret is not None)
+            out_html += "<td>{}</td>".format(not job.ret== _JOB_NOT_FINISHED)
             out_html += "<td>{}</td>".format(job.cause_of_death)
             out_html += "</tr>"
         out_html += "</table></form>"
@@ -110,7 +111,7 @@ class WebMonitor(object):
         if job.heart_beat:
             body_text += ("last memory usage: {0}\n" +
                           "<br>").format(job.heart_beat["memory"])
-            body_text += ("last cpu load: {0}\n" +
+            body_text += ("last cpu load, is alive: {0}\n" +
                           "<br>").format(job.heart_beat["cpu_load"])
 
         body_text += "host: {}<br><br>\n\n".format(job.host_name)
@@ -121,7 +122,9 @@ class WebMonitor(object):
 
         # attach log file
         if job.heart_beat:
-            with open(job.heart_beat["log_file"], "r") as log_file:
+            body_text += "heart beat: <br>{0}<br><br>".format(job.heart_beat)
+            #body_text += "{0}".format(job.log_stdout_fn)
+            with open(job.log_stdout_fn, "r") as log_file:
                 log_file_attachement = log_file.read().replace("\n", "<br>\n")
             body_text += "<br><br><br>" + log_file_attachement
         return body_text.encode()

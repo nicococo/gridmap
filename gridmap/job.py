@@ -50,7 +50,7 @@ from email.mime.image import MIMEImage
 from io import open
 from importlib import import_module
 from multiprocessing import Pool
-from socket import gethostname, gethostbyname, getaddrinfo, getfqdn
+from socket import gethostname, gethostbyname
 from smtplib import (SMTPRecipientsRefused, SMTPHeloError, SMTPSenderRefused,
                      SMTPDataError)
 
@@ -108,9 +108,9 @@ class Job(object):
                  'name', 'queue', 'environment', 'working_dir',
                  'cause_of_death', 'num_resubmits', 'home_address',
                  'log_stderr_fn', 'log_stdout_fn', 'timestamp', 'host_name',
-                 'heart_beat', 'track_mem', 'track_cpu')
+                 'heart_beat', 'track_mem', 'track_cpu','mem_max')
 
-    def __init__(self, f, args, kwlist=None, cleanup=True, mem_free="1G",
+    def __init__(self, f, args, kwlist=None, cleanup=True, mem_max="32G", mem_free="16G",
                  name='gridmap_job', num_slots=1, queue=DEFAULT_QUEUE):
         """
         Initializes a new Job.
@@ -155,6 +155,7 @@ class Job(object):
         self.ret = _JOB_NOT_FINISHED
         self.num_slots = num_slots
         self.mem_free = mem_free
+        self.mem_max = mem_max
         self.white_list = []
         self.name = name.replace(' ', '_')
         self.queue = queue
@@ -235,12 +236,16 @@ class Job(object):
 
         if self.mem_free and USE_MEM_FREE:
             ret += " -l mem_free={}".format(self.mem_free)
+        if self.mem_max:
+            ret += " -l h_vmem={}".format(self.mem_max)
         if self.num_slots and self.num_slots > 1:
             ret += " -pe smp {}".format(self.num_slots)
         if self.white_list:
             ret += " -l h={}".format('|'.join(self.white_list))
         if self.queue:
             ret += " -q {}".format(self.queue)
+
+
 
         return ret
 
@@ -253,7 +258,7 @@ class JobMonitor(object):
     """
     Job monitor that communicates with other nodes via 0MQ.
     """
-    def __init__(self, temp_dir='/scratch'):
+    def __init__(self, temp_dir='/home/nico/tmp/'):
         """
         set up socket
         """
@@ -265,18 +270,6 @@ class JobMonitor(object):
 
         self.host_name = gethostname()
         self.ip_address = gethostbyname(self.host_name)
-
-        for _, _, _, _, (ip, _) in getaddrinfo(getfqdn(), 0):
-            if ip != '127.0.0.1':
-                self.ip_address = ip
-                self.interface = "tcp://%s" % (self.ip_address)
-                break
-        else:
-            self.logger.warning('IP address for JobMonitor server is '
-                                '127.0.0.1.  Runners on other machines will be'
-                                ' unable to connect.')
-            self.ip_address = '127.0.0.1'
-
         self.interface = "tcp://%s" % (self.ip_address)
 
         # bind to random port and remember it
@@ -627,7 +620,7 @@ def send_error_mail(job):
     s.quit()
 
 
-def handle_resubmit(session_id, job, temp_dir='/scratch/'):
+def handle_resubmit(session_id, job, temp_dir='/home/nico/tmp/'):
     """
     heuristic to determine if the job should be resubmitted
 
@@ -700,7 +693,7 @@ def _process_jobs_locally(jobs, max_processes=1):
     return jobs
 
 
-def _submit_jobs(jobs, home_address, temp_dir='/scratch', white_list=None,
+def _submit_jobs(jobs, home_address, temp_dir='/home/nico/tmp', white_list=None,
                  quiet=True):
     """
     Method used to send a list of jobs onto the cluster.
@@ -737,7 +730,7 @@ def _submit_jobs(jobs, home_address, temp_dir='/scratch', white_list=None,
     return sid
 
 
-def _append_job_to_session(session, job, temp_dir='/scratch/', quiet=True):
+def _append_job_to_session(session, job, temp_dir='/home/nico/tmp/', quiet=True):
     """
     For an active session, append new job based on information stored in job
     object. Also sets job.id to the ID of the job on the grid.
@@ -783,7 +776,7 @@ def _append_job_to_session(session, job, temp_dir='/scratch/', quiet=True):
     job.id = job_id
     job.log_stdout_fn = os.path.join(temp_dir, '{}.o{}'.format(job.name,
                                                                job_id))
-    job.log_stderr_fn = os.path.join(temp_dir, '{}.e{}'.format(job.name,
+    log_stderr_fn = os.path.join(temp_dir, '{}.e{}'.format(job.name,
                                                                job_id))
 
     if not quiet:
@@ -794,7 +787,7 @@ def _append_job_to_session(session, job, temp_dir='/scratch/', quiet=True):
     session.deleteJobTemplate(jt)
 
 
-def process_jobs(jobs, temp_dir='/scratch/', white_list=None, quiet=True,
+def process_jobs(jobs, temp_dir='/home/nico/tmp/', white_list=None, quiet=False,
                  max_processes=1, local=False):
     """
     Take a list of jobs and process them on the cluster.
@@ -870,7 +863,7 @@ def _resubmit(session_id, job, temp_dir):
 # MapReduce Interface
 #####################
 def grid_map(f, args_list, cleanup=True, mem_free="1G", name='gridmap_job',
-             num_slots=1, temp_dir='/scratch/', white_list=None,
+             num_slots=1, temp_dir='/home/nico/tmp/', white_list=None,
              queue=DEFAULT_QUEUE, quiet=True, local=False, max_processes=1):
     """
     Maps a function onto the cluster.

@@ -94,7 +94,7 @@ if CREATE_PLOTS:
 
 # Global settings ####
 # email settings
-SEND_ERROR_MAIL = 'TRUE' == os.getenv('SEND_ERROR_MAIL', 'True').upper()
+SEND_ERROR_MAIL = 'TRUE' == os.getenv('SEND_ERROR_MAIL', 'False').upper()
 SMTP_SERVER = os.getenv('SMTP_SERVER', '.'.join(gethostname().split('.')[-3:]))
 ERROR_MAIL_SENDER = os.getenv('ERROR_MAIL_SENDER', 'error@gridmap.py')
 ERROR_MAIL_RECIPIENT = os.getenv('ERROR_MAIL_RECIPIENT',
@@ -123,7 +123,7 @@ CHECK_FREQUENCY = int(os.getenv('CHECK_FREQUENCY', '15'))
 HEARTBEAT_FREQUENCY = int(os.getenv('HEARTBEAT_FREQUENCY', '10'))
 
 # Is mem_free configured properly on the cluster?
-USE_MEM_FREE = 'TRUE' == os.getenv('USE_MEM_FREE', 'False').upper()
+USE_MEM_FREE = 'TRUE' == os.getenv('USE_MEM_FREE', 'True').upper()
 
 # Which queue should we use by default
 DEFAULT_QUEUE = os.getenv('DEFAULT_QUEUE', 'all.q')
